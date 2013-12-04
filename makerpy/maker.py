@@ -2,8 +2,7 @@ import inspect
 import json
 import re
 
-from bson import json_util, ObjectId
-from datetime import datetime, date
+from bson import json_util
 
 ####  CONSTANTS
 
@@ -53,25 +52,20 @@ class Maker(object):
     ###########################################################################
     def make(self, datum):
 
-        if datum is None:
-            return None
-
-        # primitive types
-        if isinstance(datum, (str, unicode, bool,
-                              int, long, float, complex,
-                              date, datetime, ObjectId)):
-            return datum
-
-        if (inspect.isroutine(datum) or
-            inspect.isclass(datum) or
-            inspect.ismodule(datum)):
-            return datum
-
-        # lists
-        if isinstance(datum, list):
+        # sequences
+        sequence_attrs = {'__getitem__', '__contains__', '__iter__',
+                          '__reversed__', 'index', 'count'}
+        if sequence_attrs.issubset(set(dir(datum))):
             return self._make_list(datum)
 
-        return self._make_object(datum)
+        # mappings
+        mapping_attrs = {'__iter__', '__getitem__', '__contains__', 'keys',
+                         'items', 'values', 'get', '__eq__', '__ne__'}
+        if mapping_attrs.issubset(set(dir(datum))):
+            return self._make_object(datum)
+
+        return datum
+
 
     ###########################################################################
     def _make_list(self, datum):
